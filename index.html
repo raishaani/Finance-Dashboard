@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZORVYN — Finance Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-void: #080a0f;
+      --bg-panel: #0d1117;
+      --bg-card: #111820;
+      --bg-hover: #161e28;
+      --border: #1e2d3d;
+      --border-bright: #2a4060;
+      --lime: #c8f542;
+      --lime-dim: #a3cc2e;
+      --lime-glow: rgba(200, 245, 66, 0.12);
+      --red: #ff4d6a;
+      --red-dim: rgba(255, 77, 106, 0.15);
+      --green: #22d3a5;
+      --green-dim: rgba(34, 211, 165, 0.15);
+      --blue: #4d9fff;
+      --text-primary: #e8edf5;
+      --text-secondary: #6e8aab;
+      --text-muted: #3d5570;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      font-family: 'Instrument Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .serif { font-family: 'DM Serif Display', serif; }
+
+    /* Noise Texture Overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg-void); }
+    ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: var(--border-bright); }
+
+    /* Lime Accent Tag */
+    .lime-tag {
+      background: var(--lime-glow);
+      color: var(--lime);
+      border: 1px solid rgba(200, 245, 66, 0.25);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* Positive / Negative Badges */
+    .badge-pos {
+      background: var(--green-dim);
+      color: var(--green);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .badge-neg {
+      background: var(--red-dim);
+      color: var(--red);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Animated number counter */
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .count-anim { animation: countUp 0.8s ease forwards; }
+
+    /* Sparkline chart */
+    .sparkline-path {
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Glow button */
+    .btn-lime {
+      background: var(--lime);
+      color: #080a0f;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(200, 245, 66, 0.25);
+    }
+    .btn-lime:hover {
+      background: #d6ff55;
+      box-shadow: 0 0 30px rgba(200, 245, 66, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--border-bright); color: var(--text-primary); }
+
+    /* Chart area gradient */
+    .chart-gradient-green { stop-color: var(--green); }
+    .chart-gradient-green-end { stop-color: var(--green); stop-opacity: 0; }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 4px;
+      background: var(--bg-panel);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* Donut chart */
+    .donut-segment {
+      transform-origin: center;
+      transition: opacity 0.2s;
+    }
+    .donut-segment:hover { opacity: 0.8; }
+
+    /* Ticker tape animation */
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-track { animation: ticker 30s linear infinite; }
+    .ticker-track:hover { animation-play-state: paused; }
+
+    /* Staggered entrance */
+    .fade-in { opacity: 0; transform: translateY(12px); animation: fadeInUp 0.6s ease forwards; }
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    .delay-6 { animation-delay: 0.6s; }
+
+    /* Sidebar active */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-family: 'Instrument Sans', sans-serif;
+      font-weight: 500;
+    }
+    .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .nav-item.active { background: var(--lime-glow); color: var(--lime); border: 1px solid rgba(200,245,66,0.15); }
+
+    /* Glowing divider */
+    .glow-line {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+    }
+
+    /* Asset row */
+    .asset-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 60px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .asset-row:hover { background: var(--bg-hover); }
+    .asset-row:last-child { border-bottom: none; }
+
+    /* Live dot */
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--lime);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--lime);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    /* Responsive tweak */
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .main-col { grid-column: 1 / -1 !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card p-4 mb-6 fade-in">
+
+
+</div>
+
+  <!-- TICKER TAPE -->
+  <div style="background: var(--bg-panel); border-bottom: 1px solid var(--border); overflow: hidden; height: 32px; display: flex; align-items: center;">
+    <div style="background: var(--lime); color: #080a0f; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; padding: 0 14px; height:100%; display:flex; align-items:center; letter-spacing:0.1em; white-space:nowrap; flex-shrink:0;">LIVE</div>
+    <div style="overflow:hidden; flex:1;">
+      <div class="ticker-track" style="display:flex; gap:0; white-space:nowrap;">
+        <!-- Ticker items duplicated for seamless loop -->
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">AAPL <span style="color:var(--green)">▲ $192.34 +1.24%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">TSLA <span style="color:var(--red)">▼ $248.10 −2.18%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">NVDA <span style="color:var(--green)">▲ $874.55 +3.67%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">MSFT <span style="color:var(--green)">▲ $415.22 +0.88%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">BTC/USD <span style="color:var(--green)">▲ $94,221 +4.12%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">ETH/USD <span style="color:var(--green)">▲ $3,480 +2.95%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">AMZN <span style="color:var(--red)">▼ $182.60 −0.43%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">GOOGL <span style="color:var(--green)">▲ $167.40 +1.10%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <!-- Duplicate for loop -->
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">AAPL <span style="color:var(--green)">▲ $192.34 +1.24%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">TSLA <span style="color:var(--red)">▼ $248.10 −2.18%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">NVDA <span style="color:var(--green)">▲ $874.55 +3.67%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">MSFT <span style="color:var(--green)">▲ $415.22 +0.88%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">BTC/USD <span style="color:var(--green)">▲ $94,221 +4.12%</span></span>
+        <span class="mono" style="color:var(--text-muted)">|</span>
+        <span class="mono" style="color:var(--text-secondary); font-size:11px; padding: 0 20px;">GOOGL <span style="color:var(--green)">▲ $167.40 +1.10%</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div style="display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 32px);">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" style="background: var(--bg-panel); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 32px; height: calc(100vh - 32px); overflow-y: auto;">
+      <!-- Logo -->
+      <div style="padding: 4px 12px 24px;">
+        <div class="serif" style="font-size: 22px; color: var(--text-primary); letter-spacing: -0.02em;">ZORVYN</div>
+        <div class="mono" style="font-size: 9px; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 2px;">Terminal v2.1</div>
+      </div>
+      <!-- Nav -->
+      <a href="index.html" class="nav-item active">
+  <svg width="15" height="15" viewBox="0 0 24 24">
+  </svg>
+  <span>📊</span>
+  <span>Overview</span>
+</a>
+
+<a href="pages/portfolio.html" class="nav-item">
+  <svg width="15" height="15" viewBox="0 0 24 24">
+  </svg>
+  <span>📈</span>
+  Portfolio
+</a>
+
+<a href="pages/market.html" class="nav-item">
+  <svg width="15" height="15" viewBox="0 0 24 24">
+  </svg>
+  <span>🕒</span>
+  Market
+</a>
+
+<a href="pages/transactions.html" class="nav-item">
+  <svg width="15" height="15" viewBox="0 0 24 24">
+  </svg>
+  <span>$</span>
+  Transactions
+</a>
+
+      <div class="glow-line" style="margin: 16px 0;"></div>
+
+      <!-- Market Status -->
+      <div style="padding: 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+          <div class="live-dot"></div>
+          <span class="mono" style="font-size: 10px; color: var(--lime); letter-spacing: 0.1em;">MARKETS OPEN</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; color: var(--text-muted);">NYSE</span>
+            <span class="mono" style="font-size: 11px; color: var(--green);">▲ 0.84%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; color: var(--text-muted);">NASDAQ</span>
+            <span class="mono" style="font-size: 11px; color: var(--green);">▲ 1.22%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; color: var(--text-muted);">S&P 500</span>
+            <span class="mono" style="font-size: 11px; color: var(--red);">▼ 0.31%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom spacer -->
+      <div style="flex:1;"></div>
+
+      <!-- User -->
+      <div style="padding: 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 10px; align-items: center;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--lime), var(--green)); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono',monospace; font-size: 12px; font-weight: 700; color: #080a0f; flex-shrink:0;">SR</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Shaani Rai</div>
+          <div class="mono" style="font-size: 10px; color: var(--text-muted);">PRO ACCOUNT</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main style="padding: 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;">
+
+      <!-- HEADER ROW -->
+      <div class="fade-in" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+        <div>
+          <div class="mono" style="font-size: 10px; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px;">Thursday, April 2, 2026 — 19:25 UTC</div>
+          <h1 class="serif" style="font-size: 28px; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.1;">Good evening,<br/><span style="color: var(--lime);">Shaani.</span></h1>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-top: 8px;">
+          <button class="btn-ghost">Export</button>
+          <button class="btn-lime">+ New Trade</button>
+        </div>
+      </div>
+
+      <!-- STAT CARDS ROW -->
+      <div class="fade-in delay-1" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+
+        <!-- Total Portfolio Value -->
+        <div class="card" style="padding: 20px; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:0; right:0; width:80px; height:80px; background:radial-gradient(circle, rgba(200,245,66,0.08) 0%, transparent 70%); pointer-events:none;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;">Portfolio Value</span>
+            <span class="lime-tag">LIVE</span>
+          </div>
+          <div class="mono count-anim" style="font-size: 26px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 6px;">$284,921<span style="font-size:14px; color:var(--text-muted);">.47</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="badge-pos">▲ +4.28%</span>
+            <span style="font-size: 11px; color: var(--text-muted);">this month</span>
+          </div>
+        </div>
+
+        <!-- Day's P&L -->
+        <div class="card" style="padding: 20px; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:0; right:0; width:80px; height:80px; background:radial-gradient(circle, rgba(34,211,165,0.07) 0%, transparent 70%); pointer-events:none;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;">Day's P&L</span>
+            <div class="live-dot"></div>
+          </div>
+          <div class="mono count-anim" style="font-size: 26px; font-weight: 600; color: var(--green); letter-spacing: -0.02em; margin-bottom: 6px;">+$3,247<span style="font-size:14px; opacity:0.7;">.80</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="badge-pos">▲ +1.15%</span>
+            <span style="font-size: 11px; color: var(--text-muted);">today</span>
+          </div>
+        </div>
+
+        <!-- Total Invested -->
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;">Invested</span>
+          </div>
+          <div class="mono count-anim" style="font-size: 26px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 6px;">$241,500<span style="font-size:14px; color:var(--text-muted);">.00</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="badge-pos">+$43,421</span>
+            <span style="font-size: 11px; color: var(--text-muted);">total return</span>
+          </div>
+        </div>
+
+        <!-- Available Cash -->
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;">Cash Balance</span>
+          </div>
+          <div class="mono count-anim" style="font-size: 26px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 6px;">$12,840<span style="font-size:14px; color:var(--text-muted);">.22</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted);">Available to invest</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN CHART + ALLOCATION -->
+      <div class="fade-in delay-2" style="display: grid; grid-template-columns: 1fr 300px; gap: 14px;">
+
+        <!-- Performance Chart -->
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">Portfolio Performance</div>
+              <div class="mono" style="font-size: 11px; color: var(--text-muted);">April 2025 — April 2026</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-ghost" style="padding: 4px 10px; font-size: 10px;">1W</button>
+              <button class="btn-ghost" style="padding: 4px 10px; font-size: 10px;">1M</button>
+              <button class="btn-ghost" style="padding: 4px 10px; font-size: 10px; background: var(--lime-glow); border-color: rgba(200,245,66,0.3); color: var(--lime);">1Y</button>
+              <button class="btn-ghost" style="padding: 4px 10px; font-size: 10px;">ALL</button>
+            </div>
+          </div>
+
+          <!-- SVG Chart -->
+          <div style="position: relative;">
+            <!-- Y axis labels -->
+            <div style="position: absolute; left: 0; top: 0; bottom: 24px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+              <span class="mono" style="font-size: 10px; color: var(--text-muted);">$290k</span>
+              <span class="mono" style="font-size: 10px; color: var(--text-muted);">$260k</span>
+              <span class="mono" style="font-size: 10px; color: var(--text-muted);">$230k</span>
+              <span class="mono" style="font-size: 10px; color: var(--text-muted);">$200k</span>
+              <span class="mono" style="font-size: 10px; color: var(--text-muted);">$170k</span>
+            </div>
+            <div style="padding-left: 36px;">
+              <svg viewBox="0 0 700 200" preserveAspectRatio="none" style="width:100%; height:180px; overflow:visible;">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#22d3a5" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="#22d3a5" stop-opacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#4d9fff"/>
+                    <stop offset="60%" stop-color="#22d3a5"/>
+                    <stop offset="100%" stop-color="#c8f542"/>
+                  </linearGradient>
+                </defs>
+                <!-- Grid lines -->
+                <line x1="0" y1="40" x2="700" y2="40" stroke="#1e2d3d" stroke-width="1"/>
+                <line x1="0" y1="80" x2="700" y2="80" stroke="#1e2d3d" stroke-width="1"/>
+                <line x1="0" y1="120" x2="700" y2="120" stroke="#1e2d3d" stroke-width="1"/>
+                <line x1="0" y1="160" x2="700" y2="160" stroke="#1e2d3d" stroke-width="1"/>
+
+                <!-- Area fill -->
+                <path d="M0,160 L58,148 L116,152 L175,140 L233,135 L291,142 L350,130 L408,118 L466,105 L524,88 L583,72 L641,55 L700,38 L700,200 L0,200 Z"
+                      fill="url(#chartGrad)"/>
+
+                <!-- Line -->
+                <path d="M0,160 L58,148 L116,152 L175,140 L233,135 L291,142 L350,130 L408,118 L466,105 L524,88 L583,72 L641,55 L700,38"
+                      fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                <!-- Current point glow -->
+                <circle cx="700" cy="38" r="5" fill="#c8f542" opacity="0.8"/>
+                <circle cx="700" cy="38" r="10" fill="#c8f542" opacity="0.15"/>
+              </svg>
+              <!-- X labels -->
+              <div style="display: flex; justify-content: space-between; padding-top: 6px;">
+                <span class="mono" style="font-size:9px; color:var(--text-muted);">Apr '25</span>
+                <span class="mono" style="font-size:9px; color:var(--text-muted);">Jun</span>
+                <span class="mono" style="font-size:9px; color:var(--text-muted);">Aug</span>
+                <span class="mono" style="font-size:9px; color:var(--text-muted);">Oct</span>
+                <span class="mono" style="font-size:9px; color:var(--text-muted);">Dec</span>
+                <span class="mono" style="font-size:9px; color:var(--text-muted);">Feb '26</span>
+                <span class="mono" style="font-size:9px; color:var(--lime);">Apr '26</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Allocation Donut -->
+        <div class="card" style="padding: 20px;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Allocation</div>
+          <div class="mono" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">By asset class</div>
+
+          <!-- SVG Donut -->
+          <div style="display: flex; justify-content: center; margin-bottom: 18px;">
+            <svg viewBox="0 0 120 120" width="150" height="150">
+              <!-- Background ring -->
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#1e2d3d" stroke-width="14"/>
+
+              <!-- Segments: circumference = 2*pi*45 = 282.74 -->
+              <!-- Equities: 42% = 118.75 -->
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#22d3a5" stroke-width="14"
+                stroke-dasharray="118.75 282.74" stroke-dashoffset="0" transform="rotate(-90 60 60)" class="donut-segment"/>
+              <!-- ETFs: 28% = 79.17 -->
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#4d9fff" stroke-width="14"
+                stroke-dasharray="79.17 282.74" stroke-dashoffset="-118.75" transform="rotate(-90 60 60)" class="donut-segment"/>
+              <!-- Crypto: 18% = 50.89 -->
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#c8f542" stroke-width="14"
+                stroke-dasharray="50.89 282.74" stroke-dashoffset="-197.92" transform="rotate(-90 60 60)" class="donut-segment"/>
+              <!-- Bonds: 12% = 33.93 -->
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#ff4d6a" stroke-width="14"
+                stroke-dasharray="33.93 282.74" stroke-dashoffset="-248.81" transform="rotate(-90 60 60)" class="donut-segment"/>
+
+              <!-- Center text -->
+              <text x="60" y="56" text-anchor="middle" font-family="'JetBrains Mono'" font-size="10" fill="#6e8aab">Total</text>
+              <text x="60" y="70" text-anchor="middle" font-family="'JetBrains Mono'" font-size="11" font-weight="600" fill="#e8edf5">$284k</text>
+            </svg>
+          </div>
+
+          <!-- Legend -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width:10px; height:10px; border-radius:2px; background:var(--green); flex-shrink:0;"></div>
+                <span style="font-size: 12px; color: var(--text-secondary);">Equities</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="mono" style="font-size: 11px; color: var(--text-primary);">42%</span>
+                <div class="progress-bar" style="width:50px;"><div class="progress-fill" style="width:42%; background:var(--green);"></div></div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width:10px; height:10px; border-radius:2px; background:var(--blue); flex-shrink:0;"></div>
+                <span style="font-size: 12px; color: var(--text-secondary);">ETFs</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="mono" style="font-size: 11px; color: var(--text-primary);">28%</span>
+                <div class="progress-bar" style="width:50px;"><div class="progress-fill" style="width:28%; background:var(--blue);"></div></div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width:10px; height:10px; border-radius:2px; background:var(--lime); flex-shrink:0;"></div>
+                <span style="font-size: 12px; color: var(--text-secondary);">Crypto</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="mono" style="font-size: 11px; color: var(--text-primary);">18%</span>
+                <div class="progress-bar" style="width:50px;"><div class="progress-fill" style="width:18%; background:var(--lime);"></div></div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width:10px; height:10px; border-radius:2px; background:var(--red); flex-shrink:0;"></div>
+                <span style="font-size: 12px; color: var(--text-secondary);">Bonds</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="mono" style="font-size: 11px; color: var(--text-primary);">12%</span>
+                <div class="progress-bar" style="width:50px;"><div class="progress-fill" style="width:12%; background:var(--red);"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOLDINGS TABLE + RECENT TRANSACTIONS -->
+      <div class="fade-in delay-3" style="display: grid; grid-template-columns: 1fr 340px; gap: 14px;">
+
+        <!-- Holdings Table -->
+        <div class="card" style="overflow: hidden;">
+          <div style="padding: 16px 16px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Holdings</div>
+            <button class="btn-ghost" style="padding: 4px 10px; font-size: 10px;">View All</button>
+          </div>
+
+          <!-- Table Header -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 60px; padding: 8px 16px; border-bottom: 1px solid var(--border);">
+            <span class="mono" style="font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;">Asset</span>
+            <span class="mono" style="font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;">Price</span>
+            <span class="mono" style="font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;">24h</span>
+            <span class="mono" style="font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;">Value</span>
+            <span class="mono" style="font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;">Trend</span>
+          </div>
+
+          <!-- Rows -->
+          <!-- AAPL -->
+          <div class="asset-row">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #1a2a3a, #0d1d2d); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--text-primary);">APL</div>
+              <div>
+               <a href="pages/apple.html" style="text-decoration:none;">
+  
+<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+Apple Inc.
+</div>
+
+<div class="mono" style="font-size: 10px; color: var(--text-muted);">
+AAPL • 45 shares
+</div>
+
+</a>
+            </div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$192.34</div>
+            <div><span class="badge-pos">+1.24%</span></div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$8,655</div>
+            <svg viewBox="0 0 60 30" width="60" height="30">
+              <path d="M0,22 L10,18 L20,20 L30,14 L40,10 L50,6 L60,4" fill="none" stroke="#22d3a5" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- NVDA -->
+          <div class="asset-row">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #1a2a1a, #0d2010); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--lime);">NVD</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">NVIDIA Corp.</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">NVDA • 18 shares</div>
+              </div>
+            </div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$874.55</div>
+            <div><span class="badge-pos">+3.67%</span></div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$15,742</div>
+            <svg viewBox="0 0 60 30" width="60" height="30">
+              <path d="M0,26 L10,22 L20,24 L30,18 L40,12 L50,7 L60,3" fill="none" stroke="#22d3a5" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- TSLA -->
+          <div class="asset-row">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #2a1a1a, #1a0a0a); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--red);">TSL</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Tesla Inc.</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">TSLA • 32 shares</div>
+              </div>
+            </div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$248.10</div>
+            <div><span class="badge-neg">−2.18%</span></div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$7,939</div>
+            <svg viewBox="0 0 60 30" width="60" height="30">
+              <path d="M0,8 L10,10 L20,7 L30,13 L40,18 L50,16 L60,22" fill="none" stroke="#ff4d6a" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- BTC -->
+          <div class="asset-row">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #2a2010, #1a1508); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#f7931a;">BTC</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Bitcoin</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">BTC • 0.82 BTC</div>
+              </div>
+            </div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$94,221</div>
+            <div><span class="badge-pos">+4.12%</span></div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$77,261</div>
+            <svg viewBox="0 0 60 30" width="60" height="30">
+              <path d="M0,24 L10,20 L20,22 L30,16 L40,10 L50,8 L60,4" fill="none" stroke="#22d3a5" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- MSFT -->
+          <div class="asset-row">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #101a2a, #081018); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--blue);">MSF</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Microsoft Corp.</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">MSFT • 24 shares</div>
+              </div>
+            </div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$415.22</div>
+            <div><span class="badge-pos">+0.88%</span></div>
+            <div class="mono" style="font-size: 13px; color: var(--text-primary);">$9,965</div>
+            <svg viewBox="0 0 60 30" width="60" height="30">
+              <path d="M0,20 L10,18 L20,22 L30,16 L40,14 L50,10 L60,8" fill="none" stroke="#22d3a5" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card" style="overflow: hidden;">
+          <div style="padding: 16px 16px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Recent Activity</div>
+            <button class="btn-ghost" style="padding: 4px 10px; font-size: 10px;">History</button>
+          </div>
+
+          <div style="padding: 8px 0;">
+
+            <!-- Transaction items -->
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--green-dim); border: 1px solid rgba(34,211,165,0.2); display:flex; align-items:center; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3a5" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Bought NVDA</div>
+                  <div class="mono" style="font-size: 10px; color: var(--text-muted);">2 hours ago • 3 shares</div>
+                </div>
+              </div>
+              <div class="mono" style="font-size: 12px; color: var(--red);">−$2,623</div>
+            </div>
+
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--red-dim); border: 1px solid rgba(255,77,106,0.2); display:flex; align-items:center; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4d6a" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Sold AMZN</div>
+                  <div class="mono" style="font-size: 10px; color: var(--text-muted);">5 hours ago • 10 shares</div>
+                </div>
+              </div>
+              <div class="mono" style="font-size: 12px; color: var(--green);">+$1,826</div>
+            </div>
+
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--green-dim); border: 1px solid rgba(34,211,165,0.2); display:flex; align-items:center; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3a5" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Bought BTC</div>
+                  <div class="mono" style="font-size: 10px; color: var(--text-muted);">Yesterday • 0.12 BTC</div>
+                </div>
+              </div>
+              <div class="mono" style="font-size: 12px; color: var(--red);">−$11,044</div>
+            </div>
+
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(77,159,255,0.1); border: 1px solid rgba(77,159,255,0.2); display:flex; align-items:center; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4d9fff" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Bought VOO ETF</div>
+                  <div class="mono" style="font-size: 10px; color: var(--text-muted);">2 days ago • 15 shares</div>
+                </div>
+              </div>
+              <div class="mono" style="font-size: 12px; color: var(--red);">−$6,742</div>
+            </div>
+
+            <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(200,245,66,0.08); border: 1px solid rgba(200,245,66,0.15); display:flex; align-items:center; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8f542" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Dividend — AAPL</div>
+                  <div class="mono" style="font-size: 10px; color: var(--text-muted);">3 days ago • Quarterly</div>
+                </div>
+              </div>
+              <div class="mono" style="font-size: 12px; color: var(--green);">+$84</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW: Watchlist + Risk -->
+      <div class="fade-in delay-4" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding-bottom: 8px;">
+
+        <!-- Watchlist -->
+        <div class="card" style="padding: 16px;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Watchlist</div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div class="mono" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">META</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">Meta Platforms</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="mono" style="font-size: 12px; color: var(--text-primary);">$504.12</div>
+                <span class="badge-pos" style="font-size:10px;">+2.41%</span>
+              </div>
+            </div>
+            <div class="glow-line"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div class="mono" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">SOL</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">Solana</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="mono" style="font-size: 12px; color: var(--text-primary);">$186.40</div>
+                <span class="badge-pos" style="font-size:10px;">+5.88%</span>
+              </div>
+            </div>
+            <div class="glow-line"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div class="mono" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">PLTR</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">Palantir Tech.</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="mono" style="font-size: 12px; color: var(--text-primary);">$28.74</div>
+                <span class="badge-neg" style="font-size:10px;">−1.02%</span>
+              </div>
+            </div>
+            <div class="glow-line"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div class="mono" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">QQQ</div>
+                <div class="mono" style="font-size: 10px; color: var(--text-muted);">Invesco ETF</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="mono" style="font-size: 12px; color: var(--text-primary);">$432.18</div>
+                <span class="badge-pos" style="font-size:10px;">+0.72%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Score -->
+        <div class="card" style="padding: 16px; display: flex; flex-direction: column;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Risk Assessment</div>
+          <div class="mono" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">Portfolio volatility index</div>
+
+          <!-- Risk meter -->
+          <div style="position: relative; margin: 8px 0 20px;">
+            <div style="background: var(--bg-panel); border-radius: 4px; height: 8px; position: relative; overflow: hidden;">
+              <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #22d3a5, #c8f542 50%, #ff4d6a);"></div>
+              <div style="position: absolute; left: 0; top: 0; bottom: 0; right: 0; background: var(--bg-panel); margin-left: 58%;"></div>
+            </div>
+            <!-- Indicator -->
+            <div style="position: absolute; left: 55%; top: -4px; width: 2px; height: 16px; background: white; border-radius: 1px; box-shadow: 0 0 6px white;"></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+            <span class="mono" style="font-size: 9px; color: var(--green);">LOW RISK</span>
+            <span class="mono" style="font-size: 9px; color: var(--text-muted);">MODERATE</span>
+            <span class="mono" style="font-size: 9px; color: var(--red);">HIGH RISK</span>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 16px;">
+            <div class="mono" style="font-size: 36px; font-weight: 700; color: var(--lime);">58</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Moderate Risk Score</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 11px; color: var(--text-muted);">Beta</span>
+              <span class="mono" style="font-size: 11px; color: var(--text-primary);">1.24</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 11px; color: var(--text-muted);">Sharpe Ratio</span>
+              <span class="mono" style="font-size: 11px; color: var(--green);">2.18</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 11px; color: var(--text-muted);">Max Drawdown</span>
+              <span class="mono" style="font-size: 11px; color: var(--red);">−8.4%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions / Goals -->
+        <div class="card" style="padding: 16px; display: flex; flex-direction: column;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 14px;">Investment Goals</div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
+
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text-secondary);">Retirement Fund</span>
+                <span class="mono" style="font-size: 11px; color: var(--lime);">71%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 71%; background: linear-gradient(90deg, var(--green), var(--lime));"></div>
+              </div>
+              <div class="mono" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">$284k of $400k target</div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text-secondary);">Emergency Fund</span>
+                <span class="mono" style="font-size: 11px; color: var(--blue);">100%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%; background: var(--blue);"></div>
+              </div>
+              <div class="mono" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">$30k of $30k — Complete ✓</div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text-secondary);">House Down Payment</span>
+                <span class="mono" style="font-size: 11px; color: var(--text-secondary);">44%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 44%; background: linear-gradient(90deg, var(--blue), #9b6dff);"></div>
+              </div>
+              <div class="mono" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">$44k of $100k target</div>
+            </div>
+
+          </div>
+
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+            <button class="btn-lime" style="flex: 1; padding: 7px 12px;">+ Add Goal</button>
+            <button class="btn-ghost" style="flex: 1;">Rebalance</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="card p-6 mt-6 fade-in text-center">
+
+<h2 class="text-xl mb-4">Spending Breakdown</h2>
+<div style="max-width:400px;margin:auto;">
+<canvas id="spendingChart"></canvas>
+</div>
+
+</div>
+    </main>
+  </div>
+  <script>
+
+let role = localStorage.getItem("role");
+
+if(!role){
+window.location="login.html";
+}
+
+</script>
+<script>
+
+const ctx = document.getElementById("spendingChart");
+
+new Chart(ctx, {
+
+type: "doughnut",
+
+data: {
+labels: ["Food", "Travel", "Shopping", "Bills"],
+
+datasets: [{
+data: [450, 300, 250, 200],
+
+backgroundColor: [
+"#22c55e",
+"#3b82f6",
+"#f59e0b",
+"#ef4444"
+],
+
+borderWidth: 0,
+hoverOffset: 20
+}]
+},
+
+options:{
+cutout: "65%",
+
+plugins:{
+legend:{
+position:"bottom",
+
+labels:{
+color:"#e8edf5",
+padding:20,
+font:{
+size:14
+}
+}
+}
+},
+
+animation:{
+animateRotate:true,
+duration:1500
+}
+
+}
+
+});
+
+</script>
+
+</body>
+</html>

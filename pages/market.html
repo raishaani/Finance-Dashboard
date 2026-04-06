@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Market - Finance Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+background:#080a0f;
+color:#e8edf5;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+.card{
+background:#111820;
+border:1px solid #1e2d3d;
+border-radius:12px;
+transition:0.3s;
+}
+
+.card:hover{
+transform:translateY(-5px);
+border-color:#2a4060;
+}
+
+.nav-item{
+display:block;
+padding:10px;
+margin-bottom:6px;
+border-radius:6px;
+color:#6e8aab;
+}
+
+.nav-item:hover{
+background:#161e28;
+color:white;
+}
+
+.active{
+background:#c8f54222;
+color:#c8f542;
+}
+
+.fade-in{
+animation:fade 0.6s ease;
+}
+
+@keyframes fade{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="flex">
+
+<!-- SIDEBAR -->
+
+<div class="w-64 h-screen bg-[#0d1117] p-6">
+
+<h1 class="text-xl font-bold mb-10">Finance</h1>
+
+<a href="../index.html" class="nav-item">Overview</a>
+<a href="portfolio.html" class="nav-item">Portfolio</a>
+<a href="market.html" class="nav-item active">Market</a>
+<a href="transactions.html" class="nav-item">Transactions</a>
+
+</div>
+
+
+<!-- MAIN CONTENT -->
+
+<div class="flex-1 p-10">
+
+<h1 class="text-3xl font-bold mb-8 fade-in">Market Overview</h1>
+
+
+<!-- MARKET CARDS -->
+
+<div class="grid grid-cols-4 gap-6 mb-10 fade-in">
+
+<div class="card p-6">
+<div class="text-gray-400 text-sm">S&P 500</div>
+<div class="text-2xl font-bold">5,210</div>
+<div class="text-green-400 text-sm">+0.82%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400 text-sm">NASDAQ</div>
+<div class="text-2xl font-bold">16,420</div>
+<div class="text-green-400 text-sm">+1.12%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400 text-sm">Dow Jones</div>
+<div class="text-2xl font-bold">38,921</div>
+<div class="text-red-400 text-sm">-0.35%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400 text-sm">Bitcoin</div>
+<div class="text-2xl font-bold">$94,221</div>
+<div class="text-green-400 text-sm">+4.12%</div>
+</div>
+
+</div>
+
+
+<!-- MARKET TABLE -->
+
+<div class="card p-6 fade-in">
+
+<h2 class="text-xl mb-6">Top Assets</h2>
+
+<table class="w-full">
+
+<thead class="text-gray-400">
+
+<tr>
+<th class="text-left p-3">Asset</th>
+<th class="text-left p-3">Price</th>
+<th class="text-left p-3">Change</th>
+<th class="text-left p-3">Market Cap</th>
+</tr>
+
+</thead>
+
+
+<tbody>
+
+<tr class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">Apple (AAPL)</td>
+<td class="p-3" id="AAPL">Loading...</td>
+<td class="p-3 text-green-400">+1.24%</td>
+<td class="p-3">$3T</td>
+</tr>
+
+<tr class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">Tesla (TSLA)</td>
+<td class="p-3">$248.10</td>
+<td class="p-3 text-red-400">-2.18%</td>
+<td class="p-3">$780B</td>
+</tr>
+
+<tr class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">Nvidia (NVDA)</td>
+<td class="p-3">$874.55</td>
+<td class="p-3 text-green-400">+3.67%</td>
+<td class="p-3">$2.1T</td>
+</tr>
+
+<tr class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">Bitcoin (BTC)</td>
+<td class="p-3">$94,221</td>
+<td class="p-3 text-green-400">+4.12%</td>
+<td class="p-3">$1.8T</td>
+</tr>
+
+<tr class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">Ethereum (ETH)</td>
+<td class="p-3">$3,480</td>
+<td class="p-3 text-green-400">+2.95%</td>
+<td class="p-3">$420B</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+
+</div>
+
+</div>
+<script>
+
+const apiKey = "d5aec35c6ab040bdb796654bafc710ee";
+
+async function loadApple(){
+
+try{
+
+// show loading
+document.getElementById("AAPL").innerText = "Loading...";
+
+const response = await fetch(
+`https://api.twelvedata.com/price?symbol=AAPL&apikey=${apiKey}`
+);
+
+const data = await response.json();
+
+if(data.price){
+
+document.getElementById("AAPL").innerText =
+"$" + parseFloat(data.price).toFixed(2);
+
+}else{
+
+document.getElementById("AAPL").innerText = "No Data";
+
+}
+
+}catch(err){
+
+document.getElementById("AAPL").innerText = "API Error";
+
+}
+
+}
+
+loadApple();
+
+// refresh every 15 seconds
+setInterval(loadApple,15000);
+
+</script>
+</body>
+
+</html>

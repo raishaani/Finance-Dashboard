@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Portfolio - Finance Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+background:#080a0f;
+color:#e8edf5;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+.card{
+background:#111820;
+border:1px solid #1e2d3d;
+border-radius:12px;
+transition:0.3s;
+}
+
+.card:hover{
+transform:translateY(-5px);
+border-color:#2a4060;
+}
+
+.nav-item{
+display:block;
+padding:10px;
+margin-bottom:6px;
+border-radius:6px;
+color:#6e8aab;
+}
+
+.nav-item:hover{
+background:#161e28;
+color:white;
+}
+
+.active{
+background:#c8f54222;
+color:#c8f542;
+}
+
+.fade-in{
+animation:fade 0.6s ease;
+}
+
+@keyframes fade{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="flex">
+
+<div class="w-64 h-screen bg-[#0d1117] p-6">
+
+<h1 class="text-xl font-bold mb-10">Finance</h1>
+
+<a href="../index.html" class="nav-item">Overview</a>
+<a href="portfolio.html" class="nav-item active">Portfolio</a>
+<a href="market.html" class="nav-item">Market</a>
+<a href="transactions.html" class="nav-item">Transactions</a>
+
+</div>
+
+<div class="flex-1 p-10">
+
+<h1 class="text-3xl font-bold mb-8 fade-in">My Portfolio</h1>
+
+<div class="grid grid-cols-3 gap-6 fade-in">
+
+<div class="card p-6">
+<div class="text-gray-400">Apple</div>
+<div class="text-2xl font-bold">$8,655</div>
+<div class="text-green-400">+1.24%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400">Tesla</div>
+<div class="text-2xl font-bold">$7,939</div>
+<div class="text-red-400">-2.18%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400">Nvidia</div>
+<div class="text-2xl font-bold">$15,742</div>
+<div class="text-green-400">+3.67%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400">Bitcoin</div>
+<div class="text-2xl font-bold">$77,261</div>
+<div class="text-green-400">+4.12%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400">Ethereum</div>
+<div class="text-2xl font-bold">$3,480</div>
+<div class="text-green-400">+2.95%</div>
+</div>
+
+<div class="card p-6">
+<div class="text-gray-400">Microsoft</div>
+<div class="text-2xl font-bold">$9,965</div>
+<div class="text-green-400">+0.88%</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

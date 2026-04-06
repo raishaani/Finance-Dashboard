@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Transactions - Finance Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+background:#080a0f;
+color:#e8edf5;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+.card{
+background:#111820;
+border:1px solid #1e2d3d;
+border-radius:12px;
+transition:0.3s;
+}
+
+.card:hover{
+transform:translateY(-5px);
+border-color:#2a4060;
+}
+
+.nav-item{
+display:block;
+padding:10px;
+margin-bottom:6px;
+border-radius:6px;
+color:#6e8aab;
+}
+
+.nav-item:hover{
+background:#161e28;
+color:white;
+}
+
+.active{
+background:#c8f54222;
+color:#c8f542;
+}
+
+.fade-in{
+animation:fade 0.6s ease;
+}
+
+@keyframes fade{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="flex">
+
+<div class="w-64 h-screen bg-[#0d1117] p-6">
+
+<h1 class="text-xl font-bold mb-10">Finance</h1>
+
+<a href="../index.html" class="nav-item">Overview</a>
+<a href="portfolio.html" class="nav-item">Portfolio</a>
+<a href="market.html" class="nav-item">Market</a>
+<a href="transactions.html" class="nav-item active">Transactions</a>
+
+</div>
+
+<div class="flex-1 p-10">
+
+<h1 class="text-3xl font-bold mb-8 fade-in">Transaction History</h1>
+
+<div class="card p-6 fade-in">
+<div class="card p-4 mb-4 fade-in">
+
+<div class="flex gap-4 items-center">
+
+<input
+id="searchInput"
+type="text"
+placeholder="Search transactions..."
+class="p-2 rounded bg-[#0d1117] text-white border border-gray-700 w-64"
+onkeyup="filterTransactions()"
+/>
+
+<select
+id="typeFilter"
+class="p-2 rounded bg-[#0d1117] text-white border border-gray-700"
+onchange="filterTransactions()"
+>
+
+<option value="all">All</option>
+<option value="income">Income</option>
+<option value="expense">Expense</option>
+
+</select>
+
+</div>
+
+</div>
+<div class="card p-6 fade-in">
+
+<h2 class="text-xl mb-6">Transaction History</h2>
+
+<table class="w-full" id="transactionTable">
+
+<thead class="text-gray-400">
+<tr>
+<th class="p-3 text-left">Date</th>
+<th class="p-3 text-left">Asset</th>
+<th class="p-3 text-left">Type</th>
+<th class="p-3 text-left">Amount</th>
+</tr>
+</thead>
+
+<tbody>
+<tr data-type="expense" class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">2 Apr 2026</td>
+<td class="p-3">NVDA</td>
+<td class="p-3 text-green-400">Buy</td>
+<td class="p-3">$2,623</td>
+</tr>
+
+
+<tr data-type="expense" class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">2 Apr 2026</td>
+<td class="p-3">AMZN</td>
+<td class="p-3 text-red-400">Sell</td>
+<td class="p-3">$1,826</td>
+</tr>
+
+
+<tr data-type="expense"class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">1 Apr 2026</td>
+<td class="p-3">BTC</td>
+<td class="p-3 text-green-400">Buy</td>
+<td class="p-3">$11,044</td>
+</tr>
+
+
+<tr data-type="income" class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">31 Mar 2026</td>
+<td class="p-3">VOO ETF</td>
+<td class="p-3 text-green-400">Buy</td>
+<td class="p-3">$6,742</td>
+</tr>
+
+
+<tr data-type="income" class="border-t border-gray-700 hover:bg-[#161e28]">
+<td class="p-3">30 Mar 2026</td>
+<td class="p-3">AAPL</td>
+<td class="p-3 text-blue-400">Dividend</td>
+<td class="p-3">$84</td>
+</tr>
+
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+<script>
+
+function filterTransactions(){
+
+let input = document.getElementById("searchInput").value.toLowerCase();
+
+let filter = document.getElementById("typeFilter").value;
+
+let table = document.getElementById("transactionTable");
+
+let rows = table.getElementsByTagName("tr");
+
+for(let i = 1; i < rows.length; i++){
+
+let text = rows[i].innerText.toLowerCase();
+
+let type = rows[i].dataset.type;
+
+let matchSearch = text.includes(input);
+
+let matchFilter = (filter === "all" || filter === type);
+
+if(matchSearch && matchFilter){
+rows[i].style.display = "";
+}else{
+rows[i].style.display = "none";
+}
+
+}
+
+}
+
+</script>
+<script>
+
+function addTransaction(){
+
+alert("Admin can add a transaction here");
+
+}
+
+</script>
+<script>
+
+let role = localStorage.getItem("role");
+
+if(role !== "admin"){
+let btn = document.getElementById("addTransactionBtn");
+if(btn) btn.style.display="none";
+}
+
+</script>
+</body>
+
+</html>
