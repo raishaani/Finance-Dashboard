@@ -1,4 +1,5 @@
-#Finance Dashboard
+# Finance Dashboard
+
 💰 Finance Dashboard
 
 A responsive Finance Dashboard built using HTML, CSS, and JavaScript to provide a clean and interactive interface for tracking financial information. The dashboard presents key financial metrics through intuitive cards, charts, and transaction views, making it easy to monitor financial performance.
